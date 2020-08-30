@@ -1,0 +1,321 @@
+import java.util.Iterator;  
+import java.util.LinkedList;  
+import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.*;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+import java.util.Collections;
+//LEFT para crear caminos;
+//RIGHT para crear obstaculos;
+//CENTER para borrar un camino;
+//cuando creas un camino, para crear otro tenes que borrarlo el que hiciste anteriormente;
+//no toques los obstaculos, todavia no cree una forma de que no saquen error, despues lo hago;
+
+int[][] mimic;
+int[][] mapa =      
+ {{-1, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
+  {0, 0, 0, -1, 0, 0, 0, 0, 0, 0}, 
+  {0, -1, 0, 0, 0,-1, 0, 0, 0, 0}, 
+  {0, -1, 0, 0,-1, -1,-1, 0, 0, 0}, 
+  {0, 0, -1, 0, 0, 0, 0, 0, 0, 0}, 
+  {0, 0, 0, -1, 0, 0, 0, 0, 0, 0}, 
+  {0, 0, 0, 0, -1, 0, 0, 0, 0, 0}, 
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+  
+
+
+void setup() {
+  size(400, 400);
+  mimic = new int[10][10];
+  
+
+  
+}
+
+void draw() {
+  background(100);
+  dM(mapa);
+  pFP a = new pFP(0,0,0);
+  pFP b = new pFP(9,1,0);
+  if(mouseButton == RIGHT){
+    mapa[int(mouseY/40%10)][int(mouseX/40%10)] = -1;
+  }
+  if(mouseButton == LEFT){
+    if(check1() == 0){
+      b = new pFP(int(mouseY/40%10),int(mouseX/40%10),0);
+      execute(a,b);
+      
+    }
+    
+    
+  }
+  if(mouseButton == CENTER){
+    for(int i = 0; i < 10; i++){
+      for(int j = 0; j < 10; j++){
+        if(mapa[j][i] == 1){
+          mapa[j][i] = 0;
+
+        }
+      }
+    }
+  }
+
+ 
+}
+
+ArrayList<pFP> pFPmatrix(){
+  ArrayList<pFP> pFPmatrix1 = new ArrayList<pFP>();
+
+  for(int x = 0; x < 10; x++){
+    for(int y = 0; y < 10; y++){
+      if(mapa[y][x] == -1){
+        pFPmatrix1.add(new pFP(y,x,0));
+        
+      }
+    }
+  }
+  return pFPmatrix1;
+  
+
+}
+Integer check1(){
+  for(int i = 0; i < 10; i++){
+    for(int j = 0; j < 10; j++){
+      if(mapa[j][i] == 1)
+      return 1;
+      
+    }
+    
+  }
+  return 0;
+
+  
+}
+
+
+void dM(int[][] map) {
+  for (int x = 0; x < 10; x++) {
+    for (int y = 0; y < 10; y++) {
+      if(map[y][x] == 0){
+        fill(255);
+        rect(x*40, y*40, 40, 40);
+      }
+      if(map[y][x] == 1){
+        fill(204, 102, 0);
+
+        rect(x*40, y*40, 40, 40);
+      }
+      if(map[y][x] == -1){
+        fill(153);
+
+        rect(x*40, y*40, 40, 40);
+        
+      }
+      
+      
+      
+      
+
+    }
+  }
+}
+
+class pFP {
+  int x, y,z,h;
+  pFP(int x, int y, int h) {
+    this.x = x;
+    this.y = y;
+    this.h = h;
+    this.z = Integer.parseInt(Integer.toString(x) + Integer.toString(y));
+
+  }
+
+  
+}
+
+
+
+ArrayList<pFP>  AL(pFP a) {
+  ArrayList<pFP> set = new ArrayList<pFP>();
+    int minX = -1;
+    int minY = -1;
+    int maxX =  2;
+    int maxY =  2;
+    if (a.x-1 < 0)
+      minX = 0;
+    if (a.x+1 > 9)
+      maxX = 1;
+    if (a.y-1 < 0)
+      minY = 0;
+    if (a.y+1 > 9)
+      maxY = 1;
+    for (int x = minX; x < maxX; x++) {
+      for (int y = minY; y < maxY; y++) {
+        if((x == 0 && y == 0) || (x == 1 && y == 1) || (x == -1 && y == -1) || (x == -1 && y == 1) || (x == 1 && y == -1))
+        continue;
+        
+        set.add(new pFP(x + a.x,y + a.y,0));
+        
+        
+      }
+    }
+  return set;
+}
+void neigh(pFP a){
+  for(pFP s : AL(a)){
+    mapa[s.x][s.y] = 1;
+  }
+}
+HashMap<Integer,Integer> AlgorithmBFS(pFP current) 
+    { 
+        boolean visited[] = new boolean[100];
+        HashMap<Integer, Integer> dict = new HashMap<Integer, Integer>();
+        LinkedList<pFP> queue = new LinkedList<pFP>();
+        
+        visited[current.z] = true; 
+        queue.add(current);
+        while (queue.size() != 0) 
+        { 
+            current = queue.poll();             
+            Iterator<pFP> i = AL(current).listIterator(); 
+
+            while (i.hasNext()) 
+            { 
+                pFP next = i.next(); 
+                if (visited[next.z] == false && dict.containsKey(next.z) == false) 
+                {   
+                    visited[next.z] = true;
+                    dict.put(next.z,current.z);
+                    
+                    queue.add(next);
+                }
+              
+                
+                
+            } 
+        }
+        return dict;
+    }
+
+  
+ArrayList<Integer> pathfinding(pFP start, pFP goal){
+  Integer current = goal.z;
+  ArrayList<Integer> path = new ArrayList<Integer>();
+  HashMap<Integer,Integer> dict = Gbfs(start,goal);  
+  while(current != start.z){
+    path.add(current);
+    current = dict.get(current);
+  }
+  return path;
+  
+}
+
+void execute(pFP start, pFP goal){
+  ArrayList<pFP> path = new ArrayList<pFP>();
+  for(Integer i : pathfinding(start,goal)){
+      mapa[i / 10][i % 10] = 1;
+      path.add(new pFP(i/10,i%10,0));
+    
+    
+  
+  
+ 
+ 
+ }
+  
+  
+ 
+
+ 
+  
+  
+}
+
+  
+HashMap<Integer,Integer> pFX(pFP start, pFP goal){
+   pFP current = start;
+   boolean[] visited = new boolean[100];
+   LinkedList<pFP> frontier = new LinkedList<pFP>();
+   frontier.add(start);
+   HashMap<Integer, Integer> dict = new HashMap<Integer, Integer>();
+   dict.put(current.z,null);
+   while(frontier.size() > 0){
+     current = frontier.poll();
+     if(current.z == goal.z){
+       break;
+     }
+     Iterator<pFP> i = AL(current).listIterator();
+     while(i.hasNext()){
+       pFP next = i.next(); 
+                if (visited[next.z] == false && dict.containsKey(next.z) == false) 
+                {   
+                    visited[next.z] = true;
+                    dict.put(next.z,current.z);
+                    frontier.add(next);
+                }
+              
+     }
+
+     
+     
+   }
+   return dict;
+     
+   
+
+   
+
+}
+class pFPComparator implements Comparator<pFP>{
+  int compare(pFP x, pFP y){
+    if(x.h > y.h){
+      return 1;
+    }
+    else if(x.h < y.h){
+      return -1;
+    }
+    return 0;
+  }
+}
+int heuristics(pFP a, pFP b){
+  return abs(a.x - b.x) + abs(a.y - b.y);
+}
+HashMap<Integer,Integer> Gbfs(pFP start, pFP goal){
+  
+   PriorityQueue<pFP> frontier = new PriorityQueue<pFP>(100,new pFPComparator());
+   frontier.add(start);
+   int priority = 0;
+   boolean[] visited = new boolean[100];
+   for(pFP a : pFPmatrix()){
+          visited[a.z] = true;
+        }
+
+   HashMap<Integer, Integer> camefrom = new HashMap<Integer, Integer>();
+   while(frontier.size() > 0){
+     pFP current = frontier.poll();
+     if(current == goal){
+       break;
+     }
+        Iterator<pFP> i = AL(current).listIterator();
+     while(i.hasNext()){
+       pFP next = i.next(); 
+                if (visited[next.z] == false && camefrom.containsKey(next.z) == false) 
+                {   priority = heuristics(goal,next);
+                    visited[next.z] = true;
+                    camefrom.put(next.z,current.z);
+                    frontier.add(new pFP(next.x,next.y,priority));
+                    
+                }
+              
+     }
+   }
+   
+
+   return camefrom;
+   
+
+  
+}
